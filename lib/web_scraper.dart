@@ -17,7 +17,8 @@ library web_scraper;
 import 'dart:async';
 
 import "package:universal_html/html.dart";
-import 'package:http/http.dart'; // Contains a client for making API calls.
+import 'package:universal_html/parsing.dart';
+import 'package:http/http.dart' as http; // Contains a client for making API calls.
 
 import 'src/validation.dart'; // Contains validation functions for URLs
 
@@ -58,7 +59,7 @@ class WebScraper {
         stopwatch.stop();
         stopwatch.reset();
         // Parses the response body once it's retrieved to be used on the other methods.
-        _document = parse(_response.body);
+        _document = parseHtmlDocument(_response.body);
       } catch (e) {
         throw WebScraperException(e.toString());
       }
@@ -75,7 +76,7 @@ class WebScraper {
       var _response = await client.get(Uri.parse(page));
       // Calculating Time Elapsed using timer from dart:core.
       // Parses the response body once it's retrieved to be used on the other methods.
-      _document = parse(_response.body);
+      _document = parseHtmlDocument(_response.body);
     } catch (e) {
       throw WebScraperException(e.toString());
     }
@@ -88,7 +89,7 @@ class WebScraper {
   bool loadFromString(String responseBodyAsString) {
     try {
       // Parses the response body once it's retrieved to be used on the other methods.
-      _document = parse(responseBodyAsString);
+      _document = parseHtmlDocument(responseBodyAsString);
     } catch (e) {
       throw WebScraperException(e.toString());
     }
@@ -109,7 +110,7 @@ class WebScraper {
       /// Adds the data enclosed in script tags
       /// ex. if document contains <script> var a = 3; </script>
       /// var a = 3; will be added to result.
-      result.add(script.text);
+      result.add(script.text ?? '');
     }
     return result;
   }
@@ -138,7 +139,7 @@ class WebScraper {
             '$variableName *=.*?;(?=([^\"\']*\"[^\"\']*\")*[^\"\']*\$)',
             multiLine: true);
         //  Iterate all matches
-        Iterable matches = re.allMatches(script.text);
+        Iterable matches = re.allMatches(script.text ?? '');
         matches.forEach((match) {
           if (match != null) {
             // List for all the occurence of the variable name.
@@ -146,7 +147,7 @@ class WebScraper {
             if (result[variableName] == null) {
               temp = [];
             }
-            temp!.add(script.text.substring(match.start, match.end));
+            temp!.add(script?.text?.substring(match.start, match.end) ?? '');
             result[variableName] = temp;
           }
         });
@@ -159,7 +160,7 @@ class WebScraper {
 
   /// Returns webpage's html in string format.
   String getPageContent() => _document != null
-      ? _document!.outerHtml
+      ? _document!.documentElement?.outerHtml ?? ''
       : throw WebScraperException(
           'ERROR: Webpage need to be loaded first, try calling loadWebPage');
 
@@ -178,8 +179,8 @@ class WebScraper {
 
     for (var element in elements) {
       // Checks if the element's text is null before adding it to the list.
-      if (element.text.trim() != '') {
-        elementData.add(element.text);
+      if (element.text?.trim() != '') {
+        elementData.add(element.text ?? '');
       }
     }
     return elementData;
@@ -252,11 +253,11 @@ class WebScraper {
     return elementData;
   }
 
-  T getClient<T extends BaseClient>(String? userAgent) {
+  T getClient<T extends http.BaseClient>(String? userAgent) {
     if (userAgent != null) {
-      return UserAgentClient(userAgent, Client()) as T;
+      return UserAgentClient(userAgent, http.Client()) as T;
     } else {
-      return Client() as T;
+      return http.Client() as T;
     }
   }
 }
@@ -272,13 +273,13 @@ class WebScraperException implements Exception {
   }
 }
 
-class UserAgentClient extends BaseClient {
+class UserAgentClient extends http.BaseClient {
   final String userAgent;
-  final Client _inner;
+  final http.Client _inner;
 
   UserAgentClient(this.userAgent, this._inner);
 
-  Future<StreamedResponse> send(BaseRequest request) {
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
     request.headers['User-Agent'] = userAgent;
     return _inner.send(request);
   }

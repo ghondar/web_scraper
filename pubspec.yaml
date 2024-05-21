@@ -7,7 +7,6 @@ environment:
   sdk: '>=2.12.0-259.12.beta <3.0.0'
 
 dependencies:
-  html: ^0.15.4
   http: ^1.2.1
   universal_html: ^2.2.4
 
