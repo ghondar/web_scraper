@@ -16,8 +16,7 @@ library web_scraper;
 
 import 'dart:async';
 
-import 'package:html/dom.dart';
-import 'package:html/parser.dart'; // Contains HTML parsers to generate a Document object.
+import "package:universal_html/html.dart";
 import 'package:http/http.dart'; // Contains a client for making API calls.
 
 import 'src/validation.dart'; // Contains validation functions for URLs
