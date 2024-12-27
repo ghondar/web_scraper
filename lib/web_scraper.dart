@@ -33,7 +33,8 @@ class WebScraper {
   // Base url of the website to be scrapped.
   String? baseUrl;
 
-  String? userAgent;
+  // Add headers field
+  Map<String, String>? headers;
 
   /// Creates the web scraper instance.
   WebScraper([String? baseUrl]) {
@@ -50,7 +51,7 @@ class WebScraper {
   Future<bool> loadWebPage(String route) async {
     if (baseUrl != null && baseUrl != '') {
       final stopwatch = Stopwatch()..start();
-      var client = getClient(userAgent);
+      var client = getClient(headers);
 
       try {
         var _response = await client.get(Uri.parse(baseUrl! + route));
@@ -71,7 +72,7 @@ class WebScraper {
   /// Loads the webpage URL into response object without requiring the two-step process of base + route.
   /// Unlike the the two-step process, the URL is NOT validated before being requested.
   Future<bool> loadFullURL(String page) async {
-    var client = getClient(userAgent);
+    var client = getClient(headers);
     try {
       var _response = await client.get(Uri.parse(page));
       // Calculating Time Elapsed using timer from dart:core.
@@ -135,9 +136,7 @@ class WebScraper {
       // Looping in all the variable names that are required to extract.
       for (var variableName in variableNames) {
         // Regular expression to get the variable names.
-        var re = RegExp(
-            '$variableName *=.*?;(?=([^\"\']*\"[^\"\']*\")*[^\"\']*\$)',
-            multiLine: true);
+        var re = RegExp('$variableName *=.*?;(?=([^\"\']*\"[^\"\']*\")*[^\"\']*\$)', multiLine: true);
         //  Iterate all matches
         Iterable matches = re.allMatches(script.text ?? '');
         matches.forEach((match) {
@@ -159,18 +158,14 @@ class WebScraper {
   }
 
   /// Returns webpage's html in string format.
-  String getPageContent() => _document != null
-      ? _document!.documentElement?.outerHtml ?? ''
-      : throw WebScraperException(
-          'ERROR: Webpage need to be loaded first, try calling loadWebPage');
+  String getPageContent() => _document != null ? _document!.documentElement?.outerHtml ?? '' : throw WebScraperException('ERROR: Webpage need to be loaded first, try calling loadWebPage');
 
   /// Returns List of elements titles found at specified address.
   /// Example address: "div.item > a.title" where item and title are class names of div and a tag respectively.
   /// For ease of access, when using Chrome inspection tool, right click the item you want to copy, then click "Inspect" and at the console, right click the highlighted item, right click and then click "Copy > Copy selector" and provide as String address parameter to this method.
   List<String> getElementTitle(String address) {
     if (_document == null) {
-      throw WebScraperException(
-          'getElement cannot be called before loadWebPage');
+      throw WebScraperException('getElement cannot be called before loadWebPage');
     }
     // Using query selector to get a list of particular element.
     var elements = _document!.querySelectorAll(address);
@@ -197,8 +192,7 @@ class WebScraper {
   List<String?> getElementAttribute(String address, String attrib) {
     // Attribs are the list of attributes required to extract from the html tag(s) ex. ['href', 'title'].
     if (_document == null) {
-      throw WebScraperException(
-          'getElement cannot be called before loadWebPage');
+      throw WebScraperException('getElement cannot be called before loadWebPage');
     }
     // Using query selector to get a list of particular element.
     var elements = _document!.querySelectorAll(address);
@@ -221,12 +215,10 @@ class WebScraper {
   ///
   /// Sometimes the last address is not present consistently throughout the webpage. Use "extraAddress" to catch its attributes.
   /// Example extraAddress: "a"
-  List<Map<String, dynamic>> getElement(String address, List<String> attribs,
-      {String? extraAddress}) {
+  List<Map<String, dynamic>> getElement(String address, List<String> attribs, {String? extraAddress}) {
     // Attribs are the list of attributes required to extract from the html tag(s) ex. ['href', 'title'].
     if (_document == null) {
-      throw WebScraperException(
-          'getElement cannot be called before loadWebPage');
+      throw WebScraperException('getElement cannot be called before loadWebPage');
     }
     // Using query selector to get a list of particular element.
     var elements = _document!.querySelectorAll(address);
@@ -253,9 +245,9 @@ class WebScraper {
     return elementData;
   }
 
-  T getClient<T extends http.BaseClient>(String? userAgent) {
-    if (userAgent != null) {
-      return UserAgentClient(userAgent, http.Client()) as T;
+  T getClient<T extends http.BaseClient>(Map<String, String>? headers) {
+    if (headers != null) {
+      return CustomHeadersClient(headers, http.Client()) as T;
     } else {
       return http.Client() as T;
     }
@@ -273,14 +265,14 @@ class WebScraperException implements Exception {
   }
 }
 
-class UserAgentClient extends http.BaseClient {
-  final String userAgent;
+class CustomHeadersClient extends http.BaseClient {
+  final Map<String, String> headers;
   final http.Client _inner;
 
-  UserAgentClient(this.userAgent, this._inner);
+  CustomHeadersClient(this.headers, this._inner);
 
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers['User-Agent'] = userAgent;
+    request.headers.addAll(headers);
     return _inner.send(request);
   }
 }

@@ -12,10 +12,7 @@ void main() {
       expect(page, true);
     });
     test('Loads Full URL', () async {
-      expect(
-          await WebScraper().loadFullURL(
-              'https://webscraper.io/test-sites/e-commerce/allinone'),
-          true);
+      expect(await WebScraper().loadFullURL('https://webscraper.io/test-sites/e-commerce/allinone'), true);
     });
     test('Gets Page Content & Loads from String', () {
       final pageContent = webScraper.getPageContent();
@@ -29,21 +26,19 @@ void main() {
     });
 
     test('Get Element Title', () {
-      var names = webScraper
-          .getElementTitle('div.thumbnail > div.caption > h4 > a.title');
+      var names = webScraper.getElementTitle('div.card.thumbnail div.caption h4:not(.price)');
       expect(names, isNotEmpty);
     });
 
     test('Get Element Attribute', () {
-      var names = webScraper.getElementAttribute(
-          'div.thumbnail > div.caption > h4 > a.title', 'title');
-      expect(names, isNotEmpty);
+      var prices = webScraper.getElementAttribute('div.card.thumbnail div.caption h4.price', 'class');
+      expect(prices, isNotEmpty);
     });
 
     test('Get Elements by selector', () async {
       productNames = webScraper.getElement(
-        'div.thumbnail > div.caption > h4 > a.title',
-        ['href', 'title'],
+        'div.card.thumbnail div.caption',
+        ['class'],
       );
       expect(productNames, isNotNull);
     });
@@ -59,12 +54,12 @@ void main() {
       print(variables);
       expect(variables, isNotNull);
     });
-    test('Set / Get UserAgent', () {
-      var expectedUserAgent = "test user agent";
-      webScraper.userAgent = expectedUserAgent;
-      var useragent = webScraper.userAgent;
-      print(useragent);
-      expect(useragent, expectedUserAgent);
+    test('Set / Get Headers', () {
+      var expectedHeaders = {'User-Agent': 'test user agent', 'Authorization': 'Bearer token'};
+      webScraper.headers = expectedHeaders;
+      var headers = webScraper.headers;
+      print(headers);
+      expect(headers, expectedHeaders);
     });
   });
 }
